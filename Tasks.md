@@ -45,13 +45,13 @@ Rules:
 
 ### T2 — Scaffold Vite, React, Express and TypeScript
 - Issue: pending
-- Status: todo
-- Branch: none
+- Status: done
+- Branch: feat/2-scaffold
 
-- [ ] `package.json` with `dev`, `build`, `start`, `typecheck`, `test` and `prepare` scripts
-- [ ] Vite + React client in `src/` with `/api` and `/media` proxied to the server
-- [ ] Express server in `server/index.ts` loading `.env`, with a health route
-- [ ] Router and nav shell with Create, Videos and Images pages as placeholders
+- [x] `package.json` with `dev`, `build`, `start`, `typecheck`, `test` and `prepare` scripts
+- [x] Vite + React client in `src/` with `/api` and `/media` proxied to the server
+- [x] Express server in `server/index.ts` loading `.env`, with a health route
+- [x] Router and nav shell with Create, Videos and Images pages as placeholders
 
 ### T3 — Types and file storage
 - Issue: pending
@@ -164,4 +164,5 @@ Rules:
 ## Session log
 
 - 2026-10-11: T1 files written on `feat/1-repo-bootstrap`. Issues not created yet, GitHub rejects `G_TOKEN` (401). The repo had no issues, so tasks T1 to T13 will become issues #1 to #13 if `node scripts/github.mjs issues` runs before any pull request is opened. Branch names already assume that.
+- 2026-10-11: T2 done on `feat/2-scaffold` (branched from `feat/1-repo-bootstrap`). Typecheck and client build pass, `/api/health` responds. `.env` is loaded with Node's `process.loadEnvFile`, no `dotenv` dependency. No pull requests opened yet, they need a working `G_TOKEN`. Next: T3.
 
