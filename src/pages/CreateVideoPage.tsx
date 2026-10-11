@@ -31,7 +31,7 @@ export const CreateVideoPage = () => {
     return (
         <section className="page">
             <h1 className="page__title">Create a video</h1>
-            {!videoId && <p className="page__hint">Name your video and describe it. Claude draws 60 frames, each one from the frame before it, and they become a 60 second reel.</p>}
+            {!videoId && <p className="page__hint">Name your video and describe it. Claude draws one frame per second of video, up to 60, each one from the frame before it.</p>}
             {checking && <p className="page__hint">Looking for a running video…</p>}
             {!videoId && !checking && <VideoForm onCreated={(video) => setParams({ video: video.id })} />}
             {videoId && <VideoProgress key={videoId} videoId={videoId} />}

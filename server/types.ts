@@ -12,7 +12,7 @@ export type Video = {
     updatedAt: string;
 };
 
-export type VideoPatch = Partial<Pick<Video, 'status' | 'framesDone' | 'error'>>;
+export type VideoPatch = Partial<Pick<Video, 'status' | 'frameCount' | 'framesDone' | 'error'>>;
 
 export type Frame = {
     index: number;

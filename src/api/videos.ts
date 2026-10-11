@@ -30,13 +30,23 @@ export async function fetchVideo(id: string) {
     return await response.json() as Video;
 }
 
-export async function createVideo(name: string, prompt: string) {
-    const response = await request('/api/videos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, prompt }) });
+export async function fetchDefaultFrameCount() {
+    const response = await request('/api/health');
+    return (await response.json() as { frameCount: number }).frameCount;
+}
+
+export async function createVideo(name: string, prompt: string, frameCount: number) {
+    const response = await request('/api/videos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, prompt, frameCount }) });
     return await response.json() as Video;
 }
 
 export async function retryVideo(id: string) {
     const response = await request(`/api/videos/${id}/retry`, { method: 'POST' });
+    return await response.json() as Video;
+}
+
+export async function finishVideo(id: string) {
+    const response = await request(`/api/videos/${id}/finish`, { method: 'POST' });
     return await response.json() as Video;
 }
 

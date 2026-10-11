@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react';
 import type { Video, VideoStreamEvent } from '../../server/types';
 import { ApiError } from '../api/http';
-import { cancelVideo, fetchVideo, isActive, retryVideo, watchVideo } from '../api/videos';
+import { cancelVideo, fetchVideo, finishVideo, isActive, retryVideo, watchVideo } from '../api/videos';
 
 const RECONNECT_MS = 3000;
+const ACTIONS: Record<VideoAction, { run: (id: string) => Promise<Video>; failure: string }> = {
+    retry: { run: retryVideo, failure: 'The video could not be retried' },
+    cancel: { run: cancelVideo, failure: 'The video could not be cancelled' },
+    finish: { run: finishVideo, failure: 'The video could not be finished' }
+};
 
 function applyEvent(video: Video | null, event: VideoStreamEvent) {
     if (event.type === 'snapshot') return event.video;
@@ -59,15 +64,15 @@ export function useVideoStream(id: string) {
         setPending(action);
         setError(null);
         try {
-            setVideo(action === 'retry' ? await retryVideo(id) : await cancelVideo(id));
+            setVideo(await ACTIONS[action].run(id));
         } catch (reason) {
-            setError(reason instanceof Error ? reason.message : `The video could not be ${action === 'retry' ? 'retried' : 'cancelled'}`);
+            setError(reason instanceof Error ? reason.message : ACTIONS[action].failure);
         } finally {
             setPending(null);
         }
     };
 
-    return { video, error, reconnecting: reconnecting && !finished, pending, retry: () => act('retry'), cancel: () => act('cancel') };
+    return { video, error, reconnecting: reconnecting && !finished, pending, retry: () => act('retry'), cancel: () => act('cancel'), finish: () => act('finish') };
 }
 
-type VideoAction = 'retry' | 'cancel';
+type VideoAction = 'retry' | 'cancel' | 'finish';

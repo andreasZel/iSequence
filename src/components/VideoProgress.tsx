@@ -15,7 +15,7 @@ const STATUS_LABELS: Record<VideoStatus, string> = {
 };
 
 export const VideoProgress = ({ videoId }: VideoProgressProps) => {
-    const { video, error, reconnecting, pending, retry, cancel } = useVideoStream(videoId);
+    const { video, error, reconnecting, pending, retry, cancel, finish } = useVideoStream(videoId);
     const [selected, setSelected] = useState<number | null>(null);
 
     if (!video) {
@@ -36,6 +36,7 @@ export const VideoProgress = ({ videoId }: VideoProgressProps) => {
 
     const current = selected ?? video.framesDone;
     const stopped = video.status === 'failed' || video.status === 'cancelled';
+    const finishable = stopped && video.framesDone > 0;
 
     return (
         <div className="progress">
@@ -53,7 +54,7 @@ export const VideoProgress = ({ videoId }: VideoProgressProps) => {
                 <progress className="progress__bar" max={video.frameCount} value={video.framesDone} aria-label="Frames generated" />
                 <p className="progress__count">{video.framesDone} of {video.frameCount} frames</p>
 
-                {video.status === 'cancelled' && <p className="progress__count">Retry continues from the last saved frame.</p>}
+                {stopped && <p className="progress__count">Retry continues from the last saved frame.{finishable && ` Or make a ${video.framesDone} second video from the frames saved so far.`}</p>}
 
                 {video.error && <p className="alert" role="alert">{video.error}</p>}
                 {error && <p className="alert" role="alert">{error}</p>}
@@ -62,6 +63,7 @@ export const VideoProgress = ({ videoId }: VideoProgressProps) => {
                 <div className="progress__actions">
                     {video.status === 'done' && <a className="button button--primary" href={videoUrl(video.id)} download={downloadName(video.name)}>Download MP4</a>}
                     {stopped && <button type="button" className="button button--primary" disabled={pending !== null} onClick={retry}>{pending === 'retry' ? 'Retrying…' : 'Retry'}</button>}
+                    {finishable && <button type="button" className="button" disabled={pending !== null} onClick={finish}>{pending === 'finish' ? 'Starting…' : `Make video from ${video.framesDone} ${video.framesDone === 1 ? 'frame' : 'frames'}`}</button>}
                     {isActive(video.status) && <button type="button" className="button button--danger" disabled={pending !== null} onClick={cancel}>{pending === 'cancel' ? 'Cancelling…' : 'Cancel'}</button>}
                     {selected !== null && video.status !== 'done' && <button type="button" className="button" onClick={() => setSelected(null)}>Follow latest frame</button>}
                     <Link className="button" to="/" state={{ fresh: true }}>New video</Link>

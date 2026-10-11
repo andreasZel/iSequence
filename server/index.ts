@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import express from 'express';
 import type { ErrorRequestHandler } from 'express';
-import { createVideoJobs } from './jobs/videoJobs';
+import { createVideoJobs, resolveFrameCount } from './jobs/videoJobs';
 import { logError } from './redact';
 import { createImagesRouter } from './routes/images';
 import { createVideosRouter } from './routes/videos';
@@ -19,7 +19,7 @@ const app = express();
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/api/health', (_req, res) => {
-    res.json({ ok: true, claudeTokenConfigured: Boolean(process.env.CLAUDE_CODE_OAUTH_TOKEN) });
+    res.json({ ok: true, claudeTokenConfigured: Boolean(process.env.CLAUDE_CODE_OAUTH_TOKEN), frameCount: resolveFrameCount() });
 });
 
 app.use('/api/images', createImagesRouter());

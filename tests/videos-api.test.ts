@@ -16,6 +16,7 @@ process.env.FRAME_COUNT = '3';
 
 let gate: Promise<void> = Promise.resolve();
 let failure: Error | null = null;
+const encoded: string[] = [];
 
 const jobs = createVideoJobs({
     generateFirst: async () => 'svg-1',
@@ -25,7 +26,7 @@ const jobs = createVideoJobs({
         return `svg-${index}`;
     },
     render: (svg) => Buffer.from(svg),
-    encode: async () => undefined,
+    encode: async (video) => void encoded.push(`${video.name}:${video.frameCount}`),
     retryDelayMs: 0
 });
 
@@ -207,4 +208,50 @@ test('a cancelled video can be retried, a running one cannot', async () => {
     release();
     await jobs.whenIdle();
     assert.equal((await getVideo(cancelled.id))?.status, 'done');
+});
+
+test('the frame count can be chosen and falls back to FRAME_COUNT', async () => {
+    const chosen = await post(base(), { name: 'Chosen', prompt: 'chosen', frameCount: 2 });
+    assert.equal(chosen.status, 201);
+    const video = await chosen.json() as Video;
+    assert.equal(video.frameCount, 2);
+    await jobs.whenIdle();
+    assert.deepEqual([(await getVideo(video.id))?.status, (await getVideo(video.id))?.framesDone], ['done', 2]);
+    assert.ok(encoded.includes('Chosen:2'));
+
+    assert.equal((await (await post(base(), { name: 'Default', prompt: 'default' })).json() as Video).frameCount, 3);
+    await jobs.whenIdle();
+    for (const frameCount of [0, 61, 2.5, -1, '5', true]) {
+        const response = await post(base(), { name: 'Bad', prompt: 'bad', frameCount });
+        assert.equal(response.status, 400);
+        assert.match((await response.json()).error, /frame count/);
+    }
+});
+
+test('a cancelled video becomes a video of its saved frames', async () => {
+    const release = hold();
+    const video = await (await post(base(), { name: 'Short', prompt: 'short' })).json() as Video;
+    await readEvents(video.id, (event) => (event.type === 'frame' && event.index === 1) || (event.type === 'snapshot' && event.video.framesDone === 1));
+    assert.equal((await post(`${base()}/${video.id}/finish`)).status, 409);
+    assert.equal((await post(`${base()}/${video.id}/cancel`)).status, 200);
+    release();
+
+    const finished = await post(`${base()}/${video.id}/finish`);
+    assert.equal(finished.status, 202);
+    assert.equal((await finished.json() as Video).frameCount, 1);
+    await jobs.whenIdle();
+    const stored = await getVideo(video.id);
+    assert.deepEqual([stored?.status, stored?.frameCount, stored?.framesDone], ['done', 1, 1]);
+    assert.ok(encoded.includes('Short:1'));
+    assert.equal((await post(`${base()}/${video.id}/finish`)).status, 409);
+});
+
+test('finish refuses videos without frames and unknown videos', async () => {
+    assert.equal((await post(`${base()}/00000000-0000-4000-8000-000000000000/finish`)).status, 404);
+    const empty = await createVideo('Empty', 'empty', 3);
+    await updateVideo(empty.id, { status: 'cancelled' });
+    const response = await post(`${base()}/${empty.id}/finish`);
+    assert.equal(response.status, 409);
+    assert.match((await response.json()).error, /no frames/);
+    assert.equal((await getVideo(empty.id))?.frameCount, 3);
 });

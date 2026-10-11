@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Video } from '../../server/types';
-import { cancelVideo, fetchVideos, isActive, removeVideo, retryVideo } from '../api/videos';
+import { cancelVideo, fetchVideos, finishVideo, isActive, removeVideo, retryVideo } from '../api/videos';
 import { LoadError } from '../components/LoadError';
 import { VideoCard } from '../components/VideoCard';
 
@@ -95,7 +95,7 @@ export const VideosPage = () => {
 
             <ul className="gallery">
                 {videos.map((video) => (
-                    <VideoCard key={video.id} video={video} playing={playingId === video.id} busy={busyIds.includes(video.id)} onPlay={setPlayingId} onRetry={(id) => handleChange(id, retryVideo, 'The video could not be retried')} onCancel={(id) => handleChange(id, cancelVideo, 'The video could not be cancelled')} onDelete={handleDelete} />
+                    <VideoCard key={video.id} video={video} playing={playingId === video.id} busy={busyIds.includes(video.id)} onPlay={setPlayingId} onRetry={(id) => handleChange(id, retryVideo, 'The video could not be retried')} onFinish={(id) => handleChange(id, finishVideo, 'The video could not be finished')} onCancel={(id) => handleChange(id, cancelVideo, 'The video could not be cancelled')} onDelete={handleDelete} />
                 ))}
             </ul>
         </section>

@@ -9,6 +9,7 @@ import { countSavedFrames, getVideo, listVideos, readFrame, saveFrame, updateVid
 import type { Frame, Video, VideoEvent, VideoStatus } from '../types';
 
 export const DEFAULT_FRAME_COUNT = 60;
+export const MAX_FRAME_COUNT = 60;
 export const MAX_FRAME_ATTEMPTS = 3;
 
 const RESUMABLE: VideoStatus[] = ['generating', 'encoding', 'queued'];
@@ -24,7 +25,7 @@ const DEFAULT_DEPS: VideoJobDeps = {
 // FRAME_COUNT shortens test runs, the reel default is 60.
 export function resolveFrameCount() {
     const value = Number(process.env.FRAME_COUNT);
-    return Number.isInteger(value) && value >= 1 && value <= DEFAULT_FRAME_COUNT ? value : DEFAULT_FRAME_COUNT;
+    return Number.isInteger(value) && value >= 1 && value <= MAX_FRAME_COUNT ? value : DEFAULT_FRAME_COUNT;
 }
 
 export function createVideoJobs(overrides: Partial<VideoJobDeps> = {}) {

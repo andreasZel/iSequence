@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import type { Response } from 'express';
-import { resolveFrameCount } from '../jobs/videoJobs';
+import { MAX_FRAME_COUNT, resolveFrameCount } from '../jobs/videoJobs';
 import type { VideoJobs } from '../jobs/videoJobs';
 import { isValidId } from '../store/paths';
-import { createVideo, deleteVideo, getVideo, listVideos } from '../store/videos';
+import { countSavedFrames, createVideo, deleteVideo, getVideo, listVideos, updateVideo } from '../store/videos';
 import type { VideoStatus, VideoStreamEvent } from '../types';
 
 const MAX_NAME_LENGTH = 120;
@@ -13,6 +13,12 @@ const RETRYABLE: VideoStatus[] = ['failed', 'cancelled'];
 
 function readText(value: unknown) {
     return typeof value === 'string' ? value.trim() : '';
+}
+
+// No value means the FRAME_COUNT default, null means invalid.
+function readFrameCount(value: unknown) {
+    if (value === undefined || value === null) return resolveFrameCount();
+    return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= MAX_FRAME_COUNT ? value : null;
 }
 
 function writeEvent(res: Response, event: VideoStreamEvent) {
@@ -38,7 +44,9 @@ export function createVideosRouter(jobs: VideoJobs) {
         if (!prompt) return void res.status(400).json({ error: 'A prompt is required' });
         if (name.length > MAX_NAME_LENGTH) return void res.status(400).json({ error: `The name is longer than ${MAX_NAME_LENGTH} characters` });
         if (prompt.length > MAX_PROMPT_LENGTH) return void res.status(400).json({ error: `The prompt is longer than ${MAX_PROMPT_LENGTH} characters` });
-        const video = await createVideo(name, prompt, resolveFrameCount());
+        const frameCount = readFrameCount(req.body?.frameCount);
+        if (frameCount === null) return void res.status(400).json({ error: `The frame count must be a whole number from 1 to ${MAX_FRAME_COUNT}` });
+        const video = await createVideo(name, prompt, frameCount);
         await jobs.enqueue(video.id);
         res.status(201).json(video);
     });
@@ -59,6 +67,18 @@ export function createVideosRouter(jobs: VideoJobs) {
         const video = await getVideo(req.params.id);
         if (!video) return void res.status(404).json({ error: 'Video not found' });
         if (!RETRYABLE.includes(video.status) || jobs.isPending(video.id)) return void res.status(409).json({ error: `A video that is ${video.status} cannot be retried` });
+        await jobs.enqueue(video.id);
+        res.status(202).json(await getVideo(video.id));
+    });
+
+    router.post('/:id/finish', async (req, res) => {
+        const video = await getVideo(req.params.id);
+        if (!video) return void res.status(404).json({ error: 'Video not found' });
+        if (!RETRYABLE.includes(video.status) || jobs.isPending(video.id)) return void res.status(409).json({ error: `A video that is ${video.status} cannot be finished early` });
+        const saved = await countSavedFrames(video.id, video.frameCount);
+        if (saved === 0) return void res.status(409).json({ error: 'The video has no frames yet' });
+        // The job then finds every frame saved and only encodes.
+        await updateVideo(video.id, { frameCount: saved, framesDone: saved });
         await jobs.enqueue(video.id);
         res.status(202).json(await getVideo(video.id));
     });

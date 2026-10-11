@@ -97,6 +97,10 @@ body {
     resize: vertical;
 }
 
+.form__input--short {
+    width: 120px;
+}
+
 .form__input:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
