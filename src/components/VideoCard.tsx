@@ -11,7 +11,7 @@ const STATUS_LABELS: Record<VideoStatus, string> = {
     cancelled: 'Cancelled'
 };
 
-export const VideoCard = ({ video, playing, busy, onPlay, onRetry, onDelete }: VideoCardProps) => {
+export const VideoCard = ({ video, playing, busy, onPlay, onRetry, onCancel, onDelete }: VideoCardProps) => {
     const active = isActive(video.status);
     const stopped = video.status === 'failed' || video.status === 'cancelled';
 
@@ -34,6 +34,7 @@ export const VideoCard = ({ video, playing, busy, onPlay, onRetry, onDelete }: V
             <div className="video-card__actions">
                 {video.status === 'done' && <a className="button button--small" href={videoUrl(video.id)} download={downloadName(video.name)}>Download</a>}
                 {active && <Link className="button button--small" to={`/?video=${video.id}`}>View progress</Link>}
+                {active && <button type="button" className="button button--small" disabled={busy} onClick={() => onCancel(video.id)}>Cancel</button>}
                 {stopped && <button type="button" className="button button--small" disabled={busy} onClick={() => onRetry(video.id)}>Retry</button>}
                 <button type="button" className="button button--small button--danger" disabled={busy} onClick={() => onDelete(video)}>Delete</button>
             </div>
@@ -47,5 +48,6 @@ type VideoCardProps = {
     busy: boolean;
     onPlay: (id: string) => void;
     onRetry: (id: string) => void;
+    onCancel: (id: string) => void;
     onDelete: (video: Video) => void;
 };

@@ -148,6 +148,55 @@ test('deleting a running video cancels its job and removes its files', async () 
     gate = Promise.resolve();
 });
 
+test('cancelling stops the running video and drops a queued one', async () => {
+    const release = hold();
+    const running = await (await post(base(), { name: 'Running', prompt: 'running' })).json() as Video;
+    const queued = await (await post(base(), { name: 'Queued', prompt: 'queued' })).json() as Video;
+    await readEvents(running.id, (event) => (event.type === 'frame' && event.index === 1) || (event.type === 'snapshot' && event.video.framesDone === 1));
+
+    const dropped = await post(`${base()}/${queued.id}/cancel`);
+    assert.equal(dropped.status, 200);
+    assert.equal((await dropped.json() as Video).status, 'cancelled');
+
+    const stopped = await post(`${base()}/${running.id}/cancel`);
+    assert.equal(stopped.status, 200);
+    assert.deepEqual([(await stopped.json() as Video).status, jobs.runningId()], ['cancelled', null]);
+    assert.equal((await post(`${base()}/${running.id}/cancel`)).status, 409);
+    await jobs.whenIdle();
+    assert.deepEqual([(await getVideo(running.id))?.framesDone, (await getVideo(queued.id))?.framesDone], [1, 0]);
+
+    release();
+    assert.equal((await post(`${base()}/${running.id}/retry`)).status, 202);
+    await jobs.whenIdle();
+    assert.deepEqual([(await getVideo(running.id))?.status, (await getVideo(running.id))?.framesDone], ['done', 3]);
+});
+
+test('cancel rejects unknown and finished videos', async () => {
+    assert.equal((await post(`${base()}/00000000-0000-4000-8000-000000000000/cancel`)).status, 404);
+    const finished = await createVideo('Finished', 'finished', 2);
+    await updateVideo(finished.id, { status: 'done' });
+    const response = await post(`${base()}/${finished.id}/cancel`);
+    assert.equal(response.status, 409);
+    assert.match((await response.json()).error, /done cannot be cancelled/);
+});
+
+test('a token inside an error never reaches the client', async () => {
+    process.env.CLAUDE_CODE_OAUTH_TOKEN = 'sk-ant-oat01-secret-value';
+    const release = hold();
+    failure = new Error('request with sk-ant-oat01-secret-value was refused');
+    const video = await (await post(base(), { name: 'Leak', prompt: 'leak' })).json() as Video;
+    const reading = readEvents(video.id, (event) => event.type === 'status' && event.status === 'failed');
+    setTimeout(release, 50);
+    const events = await reading;
+    await jobs.whenIdle();
+    failure = null;
+    delete process.env.CLAUDE_CODE_OAUTH_TOKEN;
+
+    const stored = await (await fetch(`${base()}/${video.id}`)).text();
+    assert.ok(!JSON.stringify(events).includes('secret-value') && !stored.includes('secret-value'));
+    assert.match(stored, /request with \[redacted\] was refused/);
+});
+
 test('a cancelled video can be retried, a running one cannot', async () => {
     const cancelled = await createVideo('Cancelled', 'cancelled', 2);
     await updateVideo(cancelled.id, { status: 'cancelled' });

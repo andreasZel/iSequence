@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import type { ImageItem } from '../../server/types';
 import { fetchImages, generateImage, removeImage } from '../api/images';
 import { ImageCard } from '../components/ImageCard';
+import { LoadError } from '../components/LoadError';
 
 const MAX_PROMPT_LENGTH = 2000;
 
@@ -13,17 +14,25 @@ export const ImagesPage = () => {
     const [generating, setGenerating] = useState(false);
     const [deletingIds, setDeletingIds] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
+    const [loadError, setLoadError] = useState<string | null>(null);
+    const [loadKey, setLoadKey] = useState(0);
 
     useEffect(() => {
         let active = true;
         fetchImages()
-            .then((items) => active && setImages(items))
-            .catch((reason: Error) => active && setError(reason.message))
+            .then((items) => active && setImages((current) => [...current.filter((image) => !items.some((item) => item.id === image.id)), ...items]))
+            .catch((reason: Error) => active && setLoadError(reason.message))
             .finally(() => active && setLoading(false));
         return () => {
             active = false;
         };
-    }, []);
+    }, [loadKey]);
+
+    const handleReload = () => {
+        setLoading(true);
+        setLoadError(null);
+        setLoadKey((current) => current + 1);
+    };
 
     const handleSubmit = async (event: FormEvent) => {
         event.preventDefault();
@@ -72,9 +81,10 @@ export const ImagesPage = () => {
             </form>
 
             {error && <p className="alert" role="alert">{error}</p>}
+            {loadError && <LoadError message={loadError} onRetry={handleReload} />}
 
-            {loading && <p className="page__hint">Loading images…</p>}
-            {!loading && !generating && images.length === 0 && <p className="page__hint">No images yet.</p>}
+            {loading && <p className="page__hint" role="status">Loading images…</p>}
+            {!loading && !loadError && !generating && images.length === 0 && <p className="page__hint">No images yet. Describe one above to get started.</p>}
 
             <ul className="gallery">
                 {generating && (

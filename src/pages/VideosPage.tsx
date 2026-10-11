@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Video } from '../../server/types';
-import { fetchVideos, isActive, removeVideo, retryVideo } from '../api/videos';
+import { cancelVideo, fetchVideos, isActive, removeVideo, retryVideo } from '../api/videos';
+import { LoadError } from '../components/LoadError';
 import { VideoCard } from '../components/VideoCard';
 
 const REFRESH_MS = 3000;
@@ -9,6 +10,9 @@ const REFRESH_MS = 3000;
 export const VideosPage = () => {
     const [videos, setVideos] = useState<Video[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
+    const [loadKey, setLoadKey] = useState(0);
+    const [stale, setStale] = useState(false);
     const [busyIds, setBusyIds] = useState<string[]>([]);
     const [playingId, setPlayingId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -18,20 +22,24 @@ export const VideosPage = () => {
         let active = true;
         fetchVideos()
             .then((items) => active && setVideos(items))
-            .catch((reason: Error) => active && setError(reason.message))
+            .catch((reason: Error) => active && setLoadError(reason.message))
             .finally(() => active && setLoading(false));
         return () => {
             active = false;
         };
-    }, []);
+    }, [loadKey]);
 
     useEffect(() => {
         if (!hasActive) return;
         let active = true;
         const timer = setInterval(() => {
             fetchVideos()
-                .then((items) => active && setVideos(items))
-                .catch(() => undefined);
+                .then((items) => {
+                    if (!active) return;
+                    setVideos(items);
+                    setStale(false);
+                })
+                .catch(() => active && setStale(true));
         }, REFRESH_MS);
         return () => {
             active = false;
@@ -39,14 +47,20 @@ export const VideosPage = () => {
         };
     }, [hasActive]);
 
-    const handleRetry = async (id: string) => {
+    const handleReload = () => {
+        setLoading(true);
+        setLoadError(null);
+        setLoadKey((current) => current + 1);
+    };
+
+    const handleChange = async (id: string, change: (id: string) => Promise<Video>, fallback: string) => {
         setBusyIds((current) => [...current, id]);
         setError(null);
         try {
-            const retried = await retryVideo(id);
-            setVideos((current) => current.map((video) => video.id === id ? retried : video));
+            const changed = await change(id);
+            setVideos((current) => current.map((video) => video.id === id ? changed : video));
         } catch (reason) {
-            setError(reason instanceof Error ? reason.message : 'The video could not be retried');
+            setError(reason instanceof Error ? reason.message : fallback);
         } finally {
             setBusyIds((current) => current.filter((item) => item !== id));
         }
@@ -72,14 +86,16 @@ export const VideosPage = () => {
             <h1 className="page__title">Videos</h1>
             <p className="page__hint">Every video you have made, newest first.</p>
 
+            {loadError && <LoadError message={loadError} onRetry={handleReload} />}
             {error && <p className="alert alert--spaced" role="alert">{error}</p>}
+            {stale && hasActive && <p className="notice notice--spaced" role="status">Connection lost, the list may be out of date. Trying again…</p>}
 
-            {loading && <p className="page__hint page__hint--spaced">Loading videos…</p>}
-            {!loading && !error && videos.length === 0 && <p className="page__hint page__hint--spaced">No videos yet. <Link className="page__link" to="/" state={{ fresh: true }}>Create your first one.</Link></p>}
+            {loading && <p className="page__hint page__hint--spaced" role="status">Loading videos…</p>}
+            {!loading && !loadError && videos.length === 0 && <p className="page__hint page__hint--spaced">No videos yet. <Link className="page__link" to="/" state={{ fresh: true }}>Create your first one.</Link></p>}
 
             <ul className="gallery">
                 {videos.map((video) => (
-                    <VideoCard key={video.id} video={video} playing={playingId === video.id} busy={busyIds.includes(video.id)} onPlay={setPlayingId} onRetry={handleRetry} onDelete={handleDelete} />
+                    <VideoCard key={video.id} video={video} playing={playingId === video.id} busy={busyIds.includes(video.id)} onPlay={setPlayingId} onRetry={(id) => handleChange(id, retryVideo, 'The video could not be retried')} onCancel={(id) => handleChange(id, cancelVideo, 'The video could not be cancelled')} onDelete={handleDelete} />
                 ))}
             </ul>
         </section>

@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events';
 import { setTimeout as delay } from 'node:timers/promises';
 import { ClaudeConfigError } from '../claude/client';
 import { generateFirstFrameSvg, generateNextFrameSvg } from '../claude/generate';
+import { describeError, logError } from '../redact';
 import { encodeVideo } from '../render/encode';
 import { svgToPng } from '../render/svgToPng';
 import { countSavedFrames, getVideo, listVideos, readFrame, saveFrame, updateVideo } from '../store/videos';
@@ -30,7 +31,7 @@ export function createVideoJobs(overrides: Partial<VideoJobDeps> = {}) {
     const deps = { ...DEFAULT_DEPS, ...overrides };
     const emitter = new EventEmitter();
     const queue: string[] = [];
-    let running: { id: string; controller: AbortController } | null = null;
+    let running: { id: string; controller: AbortController; finished: Promise<void> } | null = null;
     let active: Promise<void> | null = null;
 
     const emit = (event: VideoEvent) => void emitter.emit('event', event);
@@ -53,10 +54,7 @@ export function createVideoJobs(overrides: Partial<VideoJobDeps> = {}) {
         }
     }
 
-    async function run(id: string) {
-        const controller = new AbortController();
-        const { signal } = controller;
-        running = { id, controller };
+    async function run(id: string, signal: AbortSignal) {
         try {
             const stored = await getVideo(id);
             if (!stored) return;
@@ -81,18 +79,25 @@ export function createVideoJobs(overrides: Partial<VideoJobDeps> = {}) {
         } catch (error) {
             if (!(await getVideo(id))) return;
             if (signal.aborted) return void await setStatus(id, 'cancelled');
-            const message = error instanceof Error ? error.message : String(error);
+            const message = describeError(error);
             emit({ type: 'error', videoId: id, message });
             await setStatus(id, 'failed', message);
-        } finally {
-            running = null;
         }
+    }
+
+    function start(id: string) {
+        const controller = new AbortController();
+        const finished = run(id, controller.signal).catch((error) => logError('Video job crashed', error)).finally(() => {
+            running = null;
+        });
+        running = { id, controller, finished };
+        return finished;
     }
 
     function pump() {
         if (active) return;
         active = (async () => {
-            while (queue.length > 0) await run(queue.shift()!).catch((error) => console.error('Video job crashed', error));
+            while (queue.length > 0) await start(queue.shift()!);
         })().finally(() => {
             active = null;
             if (queue.length > 0) pump();
@@ -123,7 +128,10 @@ export function createVideoJobs(overrides: Partial<VideoJobDeps> = {}) {
     }
 
     async function cancel(id: string) {
-        if (running?.id === id) return void running.controller.abort();
+        if (running?.id === id) {
+            running.controller.abort();
+            return void await running.finished;
+        }
         const position = queue.indexOf(id);
         if (position === -1) return;
         queue.splice(position, 1);

@@ -63,6 +63,14 @@ export function createVideosRouter(jobs: VideoJobs) {
         res.status(202).json(await getVideo(video.id));
     });
 
+    router.post('/:id/cancel', async (req, res) => {
+        const video = await getVideo(req.params.id);
+        if (!video) return void res.status(404).json({ error: 'Video not found' });
+        if (!jobs.isPending(video.id)) return void res.status(409).json({ error: `A video that is ${video.status} cannot be cancelled` });
+        await jobs.cancel(video.id);
+        res.json(await getVideo(video.id));
+    });
+
     router.get('/:id/events', async (req, res) => {
         const id = req.params.id;
         const early: VideoStreamEvent[] = [];

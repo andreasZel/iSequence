@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ClaudeConfigError } from '../claude/client';
 import { generateImageSvg } from '../claude/generate';
 import { SvgValidationError } from '../claude/svg';
+import { describeError } from '../redact';
 import { SvgRenderError, svgToPng } from '../render/svgToPng';
 import { createImage, deleteImage, listImages } from '../store/images';
 import { isValidId } from '../store/paths';
@@ -36,8 +37,7 @@ export function createImagesRouter(generate: GenerateImageSvg = generateImageSvg
             const { svg, png } = await drawImage(generate, prompt);
             res.status(201).json(await createImage(prompt, svg, png));
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'Image generation failed';
-            res.status(error instanceof ClaudeConfigError ? 503 : 502).json({ error: message });
+            res.status(error instanceof ClaudeConfigError ? 503 : 502).json({ error: describeError(error, 'Image generation failed') });
         }
     });
 
