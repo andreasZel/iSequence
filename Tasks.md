@@ -107,12 +107,12 @@ Rules:
 
 ### T8 — ffmpeg assembly
 - Issue: #8
-- Status: todo
-- Branch: none
+- Status: done
+- Branch: feat/8-ffmpeg-assembly
 
-- [ ] `server/render/encode.ts` with `ffmpeg-static`
-- [ ] 60 PNG frames to a 60 second 1080×1920 H.264 yuv420p MP4 at 30 fps with blended transitions
-- [ ] Called by the job after the last frame, status becomes `done`
+- [x] `server/render/encode.ts` with `ffmpeg-static`
+- [x] 60 PNG frames to a 60 second 1080×1920 H.264 yuv420p MP4 at 30 fps with blended transitions
+- [x] Called by the job after the last frame, status becomes `done`
 
 ### T9 — Video API and progress events
 - Issue: #9
@@ -172,3 +172,4 @@ Rules:
 - 2026-10-11: T5 done on `feat/5-svg-renderer` (from `feat/4-claude-client`, its pull request is not open yet: `G_TOKEN` gets 403 on `POST /pulls`, it needs the "Pull requests: read and write" permission). `svgToPng(svg)` in `server/render/svgToPng.ts` is synchronous, returns a PNG `Buffer` and throws `SvgRenderError`. It overrides the root `width`, `height` and `preserveAspectRatio` so the output is always 1080×1920, on a black background. Tests in `tests/render.test.ts` (T13 item ticked). Next: T6.
 - 2026-10-11: T6 done on `feat/6-images` (from `feat/5-svg-renderer`, pull requests for T4 and T5 still not open, `G_TOKEN` gets 403 on `POST /pulls`). `server/routes/images.ts` exports `createImagesRouter(generate)`, the generator is injectable so `tests/images-api.test.ts` runs with a fake Claude. `POST /api/images` retries once on an invalid or unrenderable SVG, answers 503 when the token is missing and 502 on other generation failures; prompts are capped at 2000 characters. Client calls live in `src/api/images.ts`, the card in `src/components/ImageCard.tsx`. The page was not opened in a browser and no real image was generated, `CLAUDE_CODE_OAUTH_TOKEN` is still not in `.env`. Next: T7.
 - 2026-10-11: T7 done on `feat/7-video-jobs` (from `feat/6-images`, pull requests for T4 to T6 still not open, `G_TOKEN` gets 403 on `POST /pulls`). `createVideoJobs(deps)` in `server/jobs/videoJobs.ts` returns `enqueue`, `resume`, `cancel`, `subscribe`, `whenIdle`, `isPending`, `runningId`; Claude, renderer and encoder are injectable. `server/index.ts` creates the instance and calls `resume()` on start, T9 should pass that instance to the videos router and create videos with `resolveFrameCount()`. The default `encode` throws "not implemented", so until T8 a real job ends as `failed` after its last frame; T8 replaces that default. A missing token fails the job without retries, other errors wait 2 s between attempts. `cancel` already exists for T12. Tests in `tests/video-jobs.test.ts` with fakes (T13 resume item ticked), no real Claude run. Next: T8.
+- 2026-10-11: T8 done on `feat/8-ffmpeg-assembly` (from `feat/7-video-jobs`). `encodeVideo(video, signal)` in `server/render/encode.ts` is now the default `encode` of `createVideoJobs`. ffmpeg reads `frames/%03d.png` at 1 fps and the `framerate` filter cross-fades each frame into the next over its whole second (`scene=100`, otherwise scene detection skips the blend); the last frame is held for its second, so the length is exactly `frameCount` seconds. It writes `output.tmp.mp4` and renames it to `output.mp4`, throws `VideoEncodeError` with the ffmpeg stderr, and the abort signal kills ffmpeg. A 60 frame test reel encoded in about 24 s to a 60.00 s file. Tests in `tests/encode.test.ts` run the real ffmpeg binary, still no real Claude run. `/media/videos/<id>/output.mp4` is already servable. Next: T9.

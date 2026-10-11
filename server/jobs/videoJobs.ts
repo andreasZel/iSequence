@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events';
 import { setTimeout as delay } from 'node:timers/promises';
 import { ClaudeConfigError } from '../claude/client';
 import { generateFirstFrameSvg, generateNextFrameSvg } from '../claude/generate';
+import { encodeVideo } from '../render/encode';
 import { svgToPng } from '../render/svgToPng';
 import { countSavedFrames, getVideo, listVideos, readFrame, saveFrame, updateVideo } from '../store/videos';
 import type { Frame, Video, VideoEvent, VideoStatus } from '../types';
@@ -15,9 +16,7 @@ const DEFAULT_DEPS: VideoJobDeps = {
     generateFirst: generateFirstFrameSvg,
     generateNext: generateNextFrameSvg,
     render: svgToPng,
-    encode: async () => {
-        throw new Error('Video encoding is not implemented yet');
-    },
+    encode: encodeVideo,
     retryDelayMs: 2000
 };
 
