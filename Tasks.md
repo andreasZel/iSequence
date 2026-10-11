@@ -19,6 +19,8 @@ Rules:
 - `.env` holds `G_TOKEN` and `CLAUDE_CODE_OAUTH_TOKEN`. It is never committed. Stage files by path.
 - New tasks or bugs: add a section here with `Issue: pending`, then run `node scripts/github.mjs issues`.
 - Run `git config core.hooksPath .githooks` once per clone (`npm install` does it too).
+- Pull requests are merged by the repo owner only. If the previous pull request is not merged yet, branch the next task from the previous task branch and use that branch as the pull request base.
+- Commit messages carry no Claude attribution.
 
 ## Decisions
 
@@ -33,7 +35,7 @@ Rules:
 
 ### T1 — Repo bootstrap and workflow tooling
 - Issue: #1
-- Status: in progress
+- Status: done
 - Branch: feat/1-repo-bootstrap
 
 - [x] `.gitignore` and `.env.example`
@@ -41,7 +43,7 @@ Rules:
 - [x] `scripts/github.mjs` to create issues, close issues and open pull requests with `G_TOKEN`
 - [x] `.githooks/prepare-commit-msg` adding `[<issue>]` from `feat/<issue>` and `fix/<issue>` branches
 - [x] `CLAUDE.md` deduplicated and extended with the session workflow
-- [ ] Issues created on GitHub (blocked: `G_TOKEN` in `.env` is rejected with 401 Bad credentials)
+- [x] Issues created on GitHub
 
 ### T2 — Scaffold Vite, React, Express and TypeScript
 - Issue: #2
@@ -55,13 +57,13 @@ Rules:
 
 ### T3 — Types and file storage
 - Issue: #3
-- Status: todo
-- Branch: none
+- Status: done
+- Branch: feat/3-types-storage
 
-- [ ] Global types in `server/types.ts` (video, frame, image, job status, events)
-- [ ] `server/store/videos.ts`: create, read, update, list, delete, frame paths
-- [ ] `server/store/images.ts`: create, list, delete
-- [ ] `/media` static serving of `data/`
+- [x] Global types in `server/types.ts` (video, frame, image, job status, events)
+- [x] `server/store/videos.ts`: create, read, update, list, delete, frame paths
+- [x] `server/store/images.ts`: create, list, delete
+- [x] `/media` static serving of `data/`
 
 ### T4 — Claude client
 - Issue: #4
@@ -165,4 +167,5 @@ Rules:
 
 - 2026-10-11: T1 files written on `feat/1-repo-bootstrap`. Issues not created yet, GitHub rejects `G_TOKEN` (401). The repo had no issues, so tasks T1 to T13 will become issues #1 to #13 if `node scripts/github.mjs issues` runs before any pull request is opened. Branch names already assume that.
 - 2026-10-11: T2 done on `feat/2-scaffold` (branched from `feat/1-repo-bootstrap`). Typecheck and client build pass, `/api/health` responds. `.env` is loaded with Node's `process.loadEnvFile`, no `dotenv` dependency. No pull requests opened yet, they need a working `G_TOKEN`. Next: T3.
+- 2026-10-11: Issues #1 to #13 created, T1 and T2 merged into `master`. T3 done on `feat/3-types-storage` (from `master`). `/media` serves only `.png` and `.mp4`, ids must be UUIDs, the data folder can be moved with `DATA_DIR`. Store tests pass with `npm test`. Next: T4, which needs `CLAUDE_CODE_OAUTH_TOKEN` in `.env` to be tested for real (not set yet).
 
