@@ -95,15 +95,15 @@ Rules:
 
 ### T7 — Video job pipeline
 - Issue: #7
-- Status: todo
-- Branch: none
+- Status: done
+- Branch: feat/7-video-jobs
 
-- [ ] Sequential chain: frame N generated from frame N-1 only, after it is saved
-- [ ] Up to 3 attempts per frame, then the job is marked `failed`
-- [ ] Single running job with a queue for the rest
-- [ ] Progress persisted in `meta.json` after every frame
-- [ ] Jobs left in `generating` or `queued` resume on server start
-- [ ] `FRAME_COUNT` override for quick test runs
+- [x] Sequential chain: frame N generated from frame N-1 only, after it is saved
+- [x] Up to 3 attempts per frame, then the job is marked `failed`
+- [x] Single running job with a queue for the rest
+- [x] Progress persisted in `meta.json` after every frame
+- [x] Jobs left in `generating` or `queued` resume on server start
+- [x] `FRAME_COUNT` override for quick test runs
 
 ### T8 — ffmpeg assembly
 - Issue: #8
@@ -160,7 +160,7 @@ Rules:
 - [x] Tests for prompt builders and SVG validation
 - [x] Test that the renderer outputs 1080×1920
 - [ ] Test for the commit message hook
-- [ ] Test for job resume with a fake Claude client
+- [x] Test for job resume with a fake Claude client
 - [ ] README with setup, `.env` variables and usage
 
 ## Session log
@@ -171,3 +171,4 @@ Rules:
 - 2026-10-11: T4 done on `feat/4-claude-client` (from `master`). Claude code lives in `server/claude/`: `client.ts` (`askClaude`), `prompts.ts`, `svg.ts`, `generate.ts` (`generateFirstFrameSvg`, `generateNextFrameSvg`, `generateImageSvg`, all return a validated SVG string). Validation rejects `<image>` and `<foreignObject>` too. Tests for prompts and validation are in `tests/claude.test.ts` (T13 item ticked). No real Claude call was made, `CLAUDE_CODE_OAUTH_TOKEN` is still not in `.env`, so the SDK call in `askClaude` is only typechecked. Next: T5.
 - 2026-10-11: T5 done on `feat/5-svg-renderer` (from `feat/4-claude-client`, its pull request is not open yet: `G_TOKEN` gets 403 on `POST /pulls`, it needs the "Pull requests: read and write" permission). `svgToPng(svg)` in `server/render/svgToPng.ts` is synchronous, returns a PNG `Buffer` and throws `SvgRenderError`. It overrides the root `width`, `height` and `preserveAspectRatio` so the output is always 1080×1920, on a black background. Tests in `tests/render.test.ts` (T13 item ticked). Next: T6.
 - 2026-10-11: T6 done on `feat/6-images` (from `feat/5-svg-renderer`, pull requests for T4 and T5 still not open, `G_TOKEN` gets 403 on `POST /pulls`). `server/routes/images.ts` exports `createImagesRouter(generate)`, the generator is injectable so `tests/images-api.test.ts` runs with a fake Claude. `POST /api/images` retries once on an invalid or unrenderable SVG, answers 503 when the token is missing and 502 on other generation failures; prompts are capped at 2000 characters. Client calls live in `src/api/images.ts`, the card in `src/components/ImageCard.tsx`. The page was not opened in a browser and no real image was generated, `CLAUDE_CODE_OAUTH_TOKEN` is still not in `.env`. Next: T7.
+- 2026-10-11: T7 done on `feat/7-video-jobs` (from `feat/6-images`, pull requests for T4 to T6 still not open, `G_TOKEN` gets 403 on `POST /pulls`). `createVideoJobs(deps)` in `server/jobs/videoJobs.ts` returns `enqueue`, `resume`, `cancel`, `subscribe`, `whenIdle`, `isPending`, `runningId`; Claude, renderer and encoder are injectable. `server/index.ts` creates the instance and calls `resume()` on start, T9 should pass that instance to the videos router and create videos with `resolveFrameCount()`. The default `encode` throws "not implemented", so until T8 a real job ends as `failed` after its last frame; T8 replaces that default. A missing token fails the job without retries, other errors wait 2 s between attempts. `cancel` already exists for T12. Tests in `tests/video-jobs.test.ts` with fakes (T13 resume item ticked), no real Claude run. Next: T8.
