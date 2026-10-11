@@ -4,6 +4,7 @@ import path from 'node:path';
 import express from 'express';
 import type { ErrorRequestHandler } from 'express';
 import { createVideoJobs } from './jobs/videoJobs';
+import { logError } from './redact';
 import { createImagesRouter } from './routes/images';
 import { createVideosRouter } from './routes/videos';
 import { dataDir } from './store/paths';
@@ -37,7 +38,7 @@ if (existsSync(CLIENT_DIR)) {
 const handleError: ErrorRequestHandler = (error, _req, res, _next) => {
     const status = Number(error?.status);
     if (status >= 400 && status < 500) return void res.status(status).json({ error: status === 404 ? 'Not found' : 'Bad request' });
-    console.error(error);
+    logError('Request failed', error);
     res.status(500).json({ error: 'Internal server error' });
 };
 app.use(handleError);

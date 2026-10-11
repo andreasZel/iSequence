@@ -44,6 +44,7 @@ body {
 
 .nav__links {
     display: flex;
+    flex-wrap: wrap;
     gap: 4px;
 }
 
@@ -157,6 +158,26 @@ body {
     border: 1px solid var(--danger);
     border-radius: 8px;
     color: var(--danger);
+}
+
+.alert--action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+}
+
+.notice {
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+}
+
+.notice--spaced {
+    margin-top: 16px;
 }
 
 .gallery {
@@ -342,6 +363,10 @@ body {
     margin-top: 24px;
 }
 
+.progress--message {
+    display: block;
+}
+
 .progress__screen {
     display: block;
     width: 100%;
@@ -463,11 +488,60 @@ body {
 }
 
 @media (max-width: 640px) {
+    .app__main {
+        padding: 16px 12px 48px;
+    }
+
+    .nav {
+        flex-wrap: wrap;
+        gap: 4px 12px;
+        padding: 8px 12px;
+    }
+
+    .page__title {
+        font-size: 1.25rem;
+    }
+
+    .gallery {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+    }
+
+    .button {
+        padding: 10px 16px;
+    }
+
+    .button--small {
+        padding: 8px 12px;
+    }
+
+    .video-card__play {
+        font-size: 2rem;
+    }
+
     .progress {
         grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+        margin-top: 16px;
     }
 
     .progress__stage {
-        max-width: 300px;
+        width: 100%;
+        max-width: 260px;
+        margin: 0 auto;
+    }
+
+    .form__footer .button,
+    .progress__actions .button {
+        flex: 1 1 auto;
+        text-align: center;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .image-card__picture--pending,
+    .video-card__picture--pending,
+    .progress__screen--pending {
+        animation: none;
     }
 }

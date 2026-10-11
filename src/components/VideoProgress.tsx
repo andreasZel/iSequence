@@ -15,14 +15,21 @@ const STATUS_LABELS: Record<VideoStatus, string> = {
 };
 
 export const VideoProgress = ({ videoId }: VideoProgressProps) => {
-    const { video, error, retrying, retry } = useVideoStream(videoId);
+    const { video, error, reconnecting, pending, retry, cancel } = useVideoStream(videoId);
     const [selected, setSelected] = useState<number | null>(null);
 
     if (!video) {
         return (
-            <div className="progress">
-                {error ? <p className="alert" role="alert">{error}</p> : <p className="page__hint">Loading the video…</p>}
-                {error && <Link className="button" to="/" state={{ fresh: true }}>New video</Link>}
+            <div className="progress progress--message">
+                {error && <p className="alert" role="alert">{error}</p>}
+                {!error && reconnecting && <p className="notice" role="status">The server cannot be reached, trying again…</p>}
+                {!error && !reconnecting && <p className="page__hint" role="status">Loading the video…</p>}
+                {error && (
+                    <div className="progress__actions">
+                        <Link className="button button--primary" to="/" state={{ fresh: true }}>New video</Link>
+                        <Link className="button" to="/videos">All videos</Link>
+                    </div>
+                )}
             </div>
         );
     }
@@ -46,12 +53,16 @@ export const VideoProgress = ({ videoId }: VideoProgressProps) => {
                 <progress className="progress__bar" max={video.frameCount} value={video.framesDone} aria-label="Frames generated" />
                 <p className="progress__count">{video.framesDone} of {video.frameCount} frames</p>
 
+                {video.status === 'cancelled' && <p className="progress__count">Retry continues from the last saved frame.</p>}
+
                 {video.error && <p className="alert" role="alert">{video.error}</p>}
                 {error && <p className="alert" role="alert">{error}</p>}
+                {reconnecting && <p className="notice" role="status">Connection lost, reconnecting…</p>}
 
                 <div className="progress__actions">
                     {video.status === 'done' && <a className="button button--primary" href={videoUrl(video.id)} download={downloadName(video.name)}>Download MP4</a>}
-                    {stopped && <button type="button" className="button button--primary" disabled={retrying} onClick={retry}>{retrying ? 'Retrying…' : 'Retry'}</button>}
+                    {stopped && <button type="button" className="button button--primary" disabled={pending !== null} onClick={retry}>{pending === 'retry' ? 'Retrying…' : 'Retry'}</button>}
+                    {isActive(video.status) && <button type="button" className="button button--danger" disabled={pending !== null} onClick={cancel}>{pending === 'cancel' ? 'Cancelling…' : 'Cancel'}</button>}
                     {selected !== null && video.status !== 'done' && <button type="button" className="button" onClick={() => setSelected(null)}>Follow latest frame</button>}
                     <Link className="button" to="/" state={{ fresh: true }}>New video</Link>
                     <Link className="button" to="/videos">All videos</Link>

@@ -1,5 +1,5 @@
 import type { Video, VideoStatus, VideoStreamEvent } from '../../server/types';
-import { readError } from './http';
+import { request } from './http';
 
 const STREAM_EVENTS = ['snapshot', 'frame', 'status', 'error'];
 const ACTIVE: VideoStatus[] = ['queued', 'generating', 'encoding'];
@@ -21,40 +21,41 @@ export function downloadName(name: string) {
 }
 
 export async function fetchVideos() {
-    const response = await fetch('/api/videos');
-    if (!response.ok) throw await readError(response);
+    const response = await request('/api/videos');
     return await response.json() as Video[];
 }
 
 export async function fetchVideo(id: string) {
-    const response = await fetch(`/api/videos/${id}`);
-    if (!response.ok) throw await readError(response);
+    const response = await request(`/api/videos/${id}`);
     return await response.json() as Video;
 }
 
 export async function createVideo(name: string, prompt: string) {
-    const response = await fetch('/api/videos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, prompt }) });
-    if (!response.ok) throw await readError(response);
+    const response = await request('/api/videos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, prompt }) });
     return await response.json() as Video;
 }
 
 export async function retryVideo(id: string) {
-    const response = await fetch(`/api/videos/${id}/retry`, { method: 'POST' });
-    if (!response.ok) throw await readError(response);
+    const response = await request(`/api/videos/${id}/retry`, { method: 'POST' });
+    return await response.json() as Video;
+}
+
+export async function cancelVideo(id: string) {
+    const response = await request(`/api/videos/${id}/cancel`, { method: 'POST' });
     return await response.json() as Video;
 }
 
 export async function removeVideo(id: string) {
-    const response = await fetch(`/api/videos/${id}`, { method: 'DELETE' });
-    if (!response.ok) throw await readError(response);
+    await request(`/api/videos/${id}`, { method: 'DELETE' });
 }
 
-export function watchVideo(id: string, onEvent: (event: VideoStreamEvent) => void, onClosed: () => void) {
+export function watchVideo(id: string, onEvent: (event: VideoStreamEvent) => void, onInterrupted: () => void, onClosed: () => void) {
     const source = new EventSource(`/api/videos/${id}/events`);
     const handleMessage = (message: Event) => {
         if (message instanceof MessageEvent) return onEvent(JSON.parse(message.data) as VideoStreamEvent);
         // A plain error event with a closed stream means no reconnect.
         if (source.readyState === EventSource.CLOSED) onClosed();
+        else onInterrupted();
     };
     for (const type of STREAM_EVENTS) source.addEventListener(type, handleMessage);
     return () => source.close();

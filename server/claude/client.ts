@@ -26,10 +26,12 @@ export async function askClaude(systemPrompt: string, content: ClaudeContent, si
     const abort = () => abortController.abort();
     if (signal?.aborted) abort();
     signal?.addEventListener('abort', abort, { once: true });
+    // The Claude process never needs the GitHub token.
+    const { G_TOKEN: _githubToken, ...env } = process.env;
     try {
         const stream = query({
             prompt: singleMessage(content),
-            options: { model: CLAUDE_MODEL, systemPrompt, tools: [], mcpServers: {}, settingSources: [], maxTurns: 1, persistSession: false, abortController }
+            options: { model: CLAUDE_MODEL, systemPrompt, tools: [], mcpServers: {}, settingSources: [], maxTurns: 1, persistSession: false, abortController, env }
         });
         for await (const message of stream) {
             if (message.type !== 'result') continue;
