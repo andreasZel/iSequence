@@ -125,13 +125,13 @@ Rules:
 
 ### T10 — Create Video page
 - Issue: #10
-- Status: todo
-- Branch: none
+- Status: done
+- Branch: feat/10-create-video-page
 
-- [ ] Form with required video name and prompt, Generate button
-- [ ] Live progress (N of 60), latest frame preview and filmstrip
-- [ ] Final player and download when the job is done
-- [ ] Reopening the page for a running job reattaches to its progress
+- [x] Form with required video name and prompt, Generate button
+- [x] Live progress (N of 60), latest frame preview and filmstrip
+- [x] Final player and download when the job is done
+- [x] Reopening the page for a running job reattaches to its progress
 
 ### T11 — Videos library page
 - Issue: #11
@@ -174,3 +174,4 @@ Rules:
 - 2026-10-11: T7 done on `feat/7-video-jobs` (from `feat/6-images`, pull requests for T4 to T6 still not open, `G_TOKEN` gets 403 on `POST /pulls`). `createVideoJobs(deps)` in `server/jobs/videoJobs.ts` returns `enqueue`, `resume`, `cancel`, `subscribe`, `whenIdle`, `isPending`, `runningId`; Claude, renderer and encoder are injectable. `server/index.ts` creates the instance and calls `resume()` on start, T9 should pass that instance to the videos router and create videos with `resolveFrameCount()`. The default `encode` throws "not implemented", so until T8 a real job ends as `failed` after its last frame; T8 replaces that default. A missing token fails the job without retries, other errors wait 2 s between attempts. `cancel` already exists for T12. Tests in `tests/video-jobs.test.ts` with fakes (T13 resume item ticked), no real Claude run. Next: T8.
 - 2026-10-11: T8 done on `feat/8-ffmpeg-assembly` (from `feat/7-video-jobs`). `encodeVideo(video, signal)` in `server/render/encode.ts` is now the default `encode` of `createVideoJobs`. ffmpeg reads `frames/%03d.png` at 1 fps and the `framerate` filter cross-fades each frame into the next over its whole second (`scene=100`, otherwise scene detection skips the blend); the last frame is held for its second, so the length is exactly `frameCount` seconds. It writes `output.tmp.mp4` and renames it to `output.mp4`, throws `VideoEncodeError` with the ffmpeg stderr, and the abort signal kills ffmpeg. A 60 frame test reel encoded in about 24 s to a 60.00 s file. Tests in `tests/encode.test.ts` run the real ffmpeg binary, still no real Claude run. `/media/videos/<id>/output.mp4` is already servable. Next: T9.
 - 2026-10-11: T9 done on `feat/9-video-api` (from `feat/8-ffmpeg-assembly`, pull requests for T4 to T8 still not open, `G_TOKEN` gets 403 on `POST /pulls`). `createVideosRouter(jobs)` in `server/routes/videos.ts` is mounted on `/api/videos`. `POST` answers 201 with the queued video (name up to 120 characters, prompt up to 2000) and never waits for Claude; a missing token shows up as a `failed` video with the error text. `DELETE` cancels the job first. `retry` answers 202 for `failed` or `cancelled` videos, 409 otherwise, and resumes from the saved frames. The SSE stream sends a `snapshot` event with the whole video first (type `VideoStreamEvent` in `server/types.ts`), then `frame`, `status` and `error` events, and stays open with a ping every 15 s, so the client must close it. Frames are at `/media/videos/<id>/frames/001.png`, the result at `/media/videos/<id>/output.mp4`. The server error handler now answers 4xx errors (missing media file, malformed JSON) with their own status instead of 500. Tests in `tests/videos-api.test.ts`; a smoke run on the real server worked up to the expected `failed` status, `CLAUDE_CODE_OAUTH_TOKEN` is still not in `.env`. Next: T10.
+- 2026-10-11: T10 done on `feat/10-create-video-page` (from `feat/9-video-api`, pull requests for T4 to T9 still not open). The Create page lives at `/`: with no job it shows `VideoForm`, with `/?video=<id>` it shows `VideoProgress` (bar, latest frame, clickable filmstrip, then the player and download). Opening `/` looks for a `generating`, `encoding` or queued video and reattaches to it; the "New video" button passes router state `{ fresh: true }` to skip that, T11 can link to `/?video=<id>` for progress. Client calls are in `src/api/videos.ts` (`retryVideo`, `isActive`, `frameUrl`, `videoUrl` are ready for T11), the SSE logic in `src/hooks/useVideoStream.ts`, which closes the stream once the video is `done`, `failed` or `cancelled`. Failed and cancelled videos already have a Retry button here. Bug fixed in `server/store/videos.ts`: on Windows the `meta.json` rename threw EPERM when the page read the file at the same moment and the job ended as `failed`; meta reads and writes are now serialized per video (`withMetaLock`), with a short retry on busy files, test in `tests/store.test.ts`. Checked in headless Chrome against a server with a fake Claude and `FRAME_COUNT=6` (form, live progress, reattach, frame selection, player, failure, retry, unknown id); still no real Claude run, `CLAUDE_CODE_OAUTH_TOKEN` is not in `.env`. Next: T11.

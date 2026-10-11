@@ -42,3 +42,21 @@ test('image lifecycle', async () => {
     await deleteImage(image.id);
     assert.deepEqual(await listImages(), []);
 });
+
+test('meta survives reads racing with writes', async () => {
+    const video = await createVideo('Race', 'reads and writes at once', 60);
+    let reading = true;
+    const misses: number[] = [];
+    const readers = Array.from({ length: 4 }, async () => {
+        while (reading) if (!(await getVideo(video.id))) misses.push(1);
+    });
+    try {
+        for (let index = 1; index <= 60; index++) await updateVideo(video.id, { framesDone: index });
+    } finally {
+        reading = false;
+        await Promise.all(readers);
+    }
+    assert.equal(misses.length, 0);
+    assert.equal((await getVideo(video.id))?.framesDone, 60);
+    await deleteVideo(video.id);
+});
