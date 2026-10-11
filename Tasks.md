@@ -67,14 +67,14 @@ Rules:
 
 ### T4 — Claude client
 - Issue: #4
-- Status: todo
-- Branch: none
+- Status: done
+- Branch: feat/4-claude-client
 
-- [ ] Agent SDK wrapper using `claude-opus-5-5` and `CLAUDE_CODE_OAUTH_TOKEN`, tools disabled
-- [ ] Prompt builders for first frame, next frame and single image
-- [ ] Previous frame passed as SVG source plus PNG image block
-- [ ] SVG extraction and validation (root element, viewBox, no scripts or external references)
-- [ ] Clear configuration error when the token is missing
+- [x] Agent SDK wrapper using `claude-opus-5-5` and `CLAUDE_CODE_OAUTH_TOKEN`, tools disabled
+- [x] Prompt builders for first frame, next frame and single image
+- [x] Previous frame passed as SVG source plus PNG image block
+- [x] SVG extraction and validation (root element, viewBox, no scripts or external references)
+- [x] Clear configuration error when the token is missing
 
 ### T5 — SVG to PNG renderer
 - Issue: #5
@@ -157,7 +157,7 @@ Rules:
 - Status: todo
 - Branch: none
 
-- [ ] Tests for prompt builders and SVG validation
+- [x] Tests for prompt builders and SVG validation
 - [ ] Test that the renderer outputs 1080×1920
 - [ ] Test for the commit message hook
 - [ ] Test for job resume with a fake Claude client
@@ -168,4 +168,4 @@ Rules:
 - 2026-10-11: T1 files written on `feat/1-repo-bootstrap`. Issues not created yet, GitHub rejects `G_TOKEN` (401). The repo had no issues, so tasks T1 to T13 will become issues #1 to #13 if `node scripts/github.mjs issues` runs before any pull request is opened. Branch names already assume that.
 - 2026-10-11: T2 done on `feat/2-scaffold` (branched from `feat/1-repo-bootstrap`). Typecheck and client build pass, `/api/health` responds. `.env` is loaded with Node's `process.loadEnvFile`, no `dotenv` dependency. No pull requests opened yet, they need a working `G_TOKEN`. Next: T3.
 - 2026-10-11: Issues #1 to #13 created, T1 and T2 merged into `master`. T3 done on `feat/3-types-storage` (from `master`). `/media` serves only `.png` and `.mp4`, ids must be UUIDs, the data folder can be moved with `DATA_DIR`. Store tests pass with `npm test`. Next: T4, which needs `CLAUDE_CODE_OAUTH_TOKEN` in `.env` to be tested for real (not set yet).
-
+- 2026-10-11: T4 done on `feat/4-claude-client` (from `master`). Claude code lives in `server/claude/`: `client.ts` (`askClaude`), `prompts.ts`, `svg.ts`, `generate.ts` (`generateFirstFrameSvg`, `generateNextFrameSvg`, `generateImageSvg`, all return a validated SVG string). Validation rejects `<image>` and `<foreignObject>` too. Tests for prompts and validation are in `tests/claude.test.ts` (T13 item ticked). No real Claude call was made, `CLAUDE_CODE_OAUTH_TOKEN` is still not in `.env`, so the SDK call in `askClaude` is only typechecked. Next: T5.

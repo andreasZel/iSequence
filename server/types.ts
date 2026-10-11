@@ -26,6 +26,12 @@ export type ImageItem = {
     createdAt: string;
 };
 
+export type ClaudeContentBlock =
+    | { type: 'text'; text: string }
+    | { type: 'image'; source: { type: 'base64'; media_type: 'image/png'; data: string } };
+
+export type ClaudeContent = ClaudeContentBlock[];
+
 export type VideoEvent =
     | { type: 'frame'; videoId: string; index: number; frameCount: number }
     | { type: 'status'; videoId: string; status: VideoStatus }
