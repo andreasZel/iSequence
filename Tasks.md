@@ -116,12 +116,12 @@ Rules:
 
 ### T9 — Video API and progress events
 - Issue: #9
-- Status: todo
-- Branch: none
+- Status: done
+- Branch: feat/9-video-api
 
-- [ ] `POST /api/videos` with required `name` and `prompt`
-- [ ] `GET /api/videos`, `GET /api/videos/:id`, `DELETE /api/videos/:id`, `POST /api/videos/:id/retry`
-- [ ] `GET /api/videos/:id/events` SSE stream with frame, status and error events
+- [x] `POST /api/videos` with required `name` and `prompt`
+- [x] `GET /api/videos`, `GET /api/videos/:id`, `DELETE /api/videos/:id`, `POST /api/videos/:id/retry`
+- [x] `GET /api/videos/:id/events` SSE stream with frame, status and error events
 
 ### T10 — Create Video page
 - Issue: #10
@@ -173,3 +173,4 @@ Rules:
 - 2026-10-11: T6 done on `feat/6-images` (from `feat/5-svg-renderer`, pull requests for T4 and T5 still not open, `G_TOKEN` gets 403 on `POST /pulls`). `server/routes/images.ts` exports `createImagesRouter(generate)`, the generator is injectable so `tests/images-api.test.ts` runs with a fake Claude. `POST /api/images` retries once on an invalid or unrenderable SVG, answers 503 when the token is missing and 502 on other generation failures; prompts are capped at 2000 characters. Client calls live in `src/api/images.ts`, the card in `src/components/ImageCard.tsx`. The page was not opened in a browser and no real image was generated, `CLAUDE_CODE_OAUTH_TOKEN` is still not in `.env`. Next: T7.
 - 2026-10-11: T7 done on `feat/7-video-jobs` (from `feat/6-images`, pull requests for T4 to T6 still not open, `G_TOKEN` gets 403 on `POST /pulls`). `createVideoJobs(deps)` in `server/jobs/videoJobs.ts` returns `enqueue`, `resume`, `cancel`, `subscribe`, `whenIdle`, `isPending`, `runningId`; Claude, renderer and encoder are injectable. `server/index.ts` creates the instance and calls `resume()` on start, T9 should pass that instance to the videos router and create videos with `resolveFrameCount()`. The default `encode` throws "not implemented", so until T8 a real job ends as `failed` after its last frame; T8 replaces that default. A missing token fails the job without retries, other errors wait 2 s between attempts. `cancel` already exists for T12. Tests in `tests/video-jobs.test.ts` with fakes (T13 resume item ticked), no real Claude run. Next: T8.
 - 2026-10-11: T8 done on `feat/8-ffmpeg-assembly` (from `feat/7-video-jobs`). `encodeVideo(video, signal)` in `server/render/encode.ts` is now the default `encode` of `createVideoJobs`. ffmpeg reads `frames/%03d.png` at 1 fps and the `framerate` filter cross-fades each frame into the next over its whole second (`scene=100`, otherwise scene detection skips the blend); the last frame is held for its second, so the length is exactly `frameCount` seconds. It writes `output.tmp.mp4` and renames it to `output.mp4`, throws `VideoEncodeError` with the ffmpeg stderr, and the abort signal kills ffmpeg. A 60 frame test reel encoded in about 24 s to a 60.00 s file. Tests in `tests/encode.test.ts` run the real ffmpeg binary, still no real Claude run. `/media/videos/<id>/output.mp4` is already servable. Next: T9.
+- 2026-10-11: T9 done on `feat/9-video-api` (from `feat/8-ffmpeg-assembly`, pull requests for T4 to T8 still not open, `G_TOKEN` gets 403 on `POST /pulls`). `createVideosRouter(jobs)` in `server/routes/videos.ts` is mounted on `/api/videos`. `POST` answers 201 with the queued video (name up to 120 characters, prompt up to 2000) and never waits for Claude; a missing token shows up as a `failed` video with the error text. `DELETE` cancels the job first. `retry` answers 202 for `failed` or `cancelled` videos, 409 otherwise, and resumes from the saved frames. The SSE stream sends a `snapshot` event with the whole video first (type `VideoStreamEvent` in `server/types.ts`), then `frame`, `status` and `error` events, and stays open with a ping every 15 s, so the client must close it. Frames are at `/media/videos/<id>/frames/001.png`, the result at `/media/videos/<id>/output.mp4`. The server error handler now answers 4xx errors (missing media file, malformed JSON) with their own status instead of 500. Tests in `tests/videos-api.test.ts`; a smoke run on the real server worked up to the expected `failed` status, `CLAUDE_CODE_OAUTH_TOKEN` is still not in `.env`. Next: T10.
