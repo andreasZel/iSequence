@@ -5,6 +5,7 @@ import express from 'express';
 import type { ErrorRequestHandler } from 'express';
 import { createVideoJobs } from './jobs/videoJobs';
 import { createImagesRouter } from './routes/images';
+import { createVideosRouter } from './routes/videos';
 import { dataDir } from './store/paths';
 
 const PORT = Number(process.env.PORT ?? 3001);
@@ -21,6 +22,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/images', createImagesRouter());
+app.use('/api/videos', createVideosRouter(videoJobs));
 
 app.use('/media', (req, res, next) => {
     if (!MEDIA_EXTENSIONS.includes(path.extname(req.path).toLowerCase())) return void res.status(404).end();
@@ -33,6 +35,8 @@ if (existsSync(CLIENT_DIR)) {
 }
 
 const handleError: ErrorRequestHandler = (error, _req, res, _next) => {
+    const status = Number(error?.status);
+    if (status >= 400 && status < 500) return void res.status(status).json({ error: status === 404 ? 'Not found' : 'Bad request' });
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });
 };

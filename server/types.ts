@@ -36,3 +36,5 @@ export type VideoEvent =
     | { type: 'frame'; videoId: string; index: number; frameCount: number }
     | { type: 'status'; videoId: string; status: VideoStatus }
     | { type: 'error'; videoId: string; message: string };
+
+export type VideoStreamEvent = VideoEvent | { type: 'snapshot'; videoId: string; video: Video };

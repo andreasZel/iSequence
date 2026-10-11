@@ -51,7 +51,7 @@ export async function listVideos() {
 }
 
 export async function deleteVideo(id: string) {
-    await rm(videoDir(id), { recursive: true, force: true });
+    await rm(videoDir(id), { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 }
 
 export async function saveFrame(id: string, frame: Frame) {
