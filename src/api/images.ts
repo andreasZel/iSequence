@@ -1,9 +1,5 @@
 import type { ImageItem } from '../../server/types';
-
-async function readError(response: Response) {
-    const body = await response.json().catch(() => null);
-    return new Error(typeof body?.error === 'string' ? body.error : `Request failed (${response.status})`);
-}
+import { readError } from './http';
 
 export function imageUrl(id: string) {
     return `/media/images/${id}.png`;
