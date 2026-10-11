@@ -43,7 +43,11 @@ const handleError: ErrorRequestHandler = (error, _req, res, _next) => {
 };
 app.use(handleError);
 
-app.listen(PORT, async () => {
+app.listen(PORT, async (error) => {
+    if (error) {
+        logError(`Server could not listen on port ${PORT}`, error);
+        process.exit(1);
+    }
     console.log(`iSequence server on http://localhost:${PORT}`);
     const resumed = await videoJobs.resume();
     if (resumed > 0) console.log(`Resumed ${resumed} unfinished video job(s)`);
