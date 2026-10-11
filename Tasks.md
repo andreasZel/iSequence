@@ -32,7 +32,7 @@ Rules:
 ## Tasks
 
 ### T1 — Repo bootstrap and workflow tooling
-- Issue: pending
+- Issue: #1
 - Status: in progress
 - Branch: feat/1-repo-bootstrap
 
@@ -44,7 +44,7 @@ Rules:
 - [ ] Issues created on GitHub (blocked: `G_TOKEN` in `.env` is rejected with 401 Bad credentials)
 
 ### T2 — Scaffold Vite, React, Express and TypeScript
-- Issue: pending
+- Issue: #2
 - Status: done
 - Branch: feat/2-scaffold
 
@@ -54,7 +54,7 @@ Rules:
 - [x] Router and nav shell with Create, Videos and Images pages as placeholders
 
 ### T3 — Types and file storage
-- Issue: pending
+- Issue: #3
 - Status: todo
 - Branch: none
 
@@ -64,7 +64,7 @@ Rules:
 - [ ] `/media` static serving of `data/`
 
 ### T4 — Claude client
-- Issue: pending
+- Issue: #4
 - Status: todo
 - Branch: none
 
@@ -75,7 +75,7 @@ Rules:
 - [ ] Clear configuration error when the token is missing
 
 ### T5 — SVG to PNG renderer
-- Issue: pending
+- Issue: #5
 - Status: todo
 - Branch: none
 
@@ -84,7 +84,7 @@ Rules:
 - [ ] Render errors surfaced so the caller can retry the frame
 
 ### T6 — Image generation API and Images page
-- Issue: pending
+- Issue: #6
 - Status: todo
 - Branch: none
 
@@ -92,7 +92,7 @@ Rules:
 - [ ] Images page: prompt form, pending state, gallery, download, delete
 
 ### T7 — Video job pipeline
-- Issue: pending
+- Issue: #7
 - Status: todo
 - Branch: none
 
@@ -104,7 +104,7 @@ Rules:
 - [ ] `FRAME_COUNT` override for quick test runs
 
 ### T8 — ffmpeg assembly
-- Issue: pending
+- Issue: #8
 - Status: todo
 - Branch: none
 
@@ -113,7 +113,7 @@ Rules:
 - [ ] Called by the job after the last frame, status becomes `done`
 
 ### T9 — Video API and progress events
-- Issue: pending
+- Issue: #9
 - Status: todo
 - Branch: none
 
@@ -122,7 +122,7 @@ Rules:
 - [ ] `GET /api/videos/:id/events` SSE stream with frame, status and error events
 
 ### T10 — Create Video page
-- Issue: pending
+- Issue: #10
 - Status: todo
 - Branch: none
 
@@ -132,7 +132,7 @@ Rules:
 - [ ] Reopening the page for a running job reattaches to its progress
 
 ### T11 — Videos library page
-- Issue: pending
+- Issue: #11
 - Status: todo
 - Branch: none
 
@@ -141,7 +141,7 @@ Rules:
 - [ ] Retry for failed videos and a link to the progress of running ones
 
 ### T12 — Failure handling and polish
-- Issue: pending
+- Issue: #12
 - Status: todo
 - Branch: none
 
@@ -151,7 +151,7 @@ Rules:
 - [ ] Token never sent to the client or written to logs
 
 ### T13 — Tests and README
-- Issue: pending
+- Issue: #13
 - Status: todo
 - Branch: none
 
