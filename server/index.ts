@@ -3,12 +3,15 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import express from 'express';
 import type { ErrorRequestHandler } from 'express';
+import { createVideoJobs } from './jobs/videoJobs';
 import { createImagesRouter } from './routes/images';
 import { dataDir } from './store/paths';
 
 const PORT = Number(process.env.PORT ?? 3001);
 const CLIENT_DIR = path.resolve('dist');
 const MEDIA_EXTENSIONS = ['.png', '.mp4'];
+
+const videoJobs = createVideoJobs();
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -35,4 +38,8 @@ const handleError: ErrorRequestHandler = (error, _req, res, _next) => {
 };
 app.use(handleError);
 
-app.listen(PORT, () => console.log(`iSequence server on http://localhost:${PORT}`));
+app.listen(PORT, async () => {
+    console.log(`iSequence server on http://localhost:${PORT}`);
+    const resumed = await videoJobs.resume();
+    if (resumed > 0) console.log(`Resumed ${resumed} unfinished video job(s)`);
+});
