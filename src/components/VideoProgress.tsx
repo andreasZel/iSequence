@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { VideoStatus } from '../../server/types';
-import { frameUrl, isActive, videoUrl } from '../api/videos';
+import { downloadName, frameUrl, isActive, videoUrl } from '../api/videos';
 import { useVideoStream } from '../hooks/useVideoStream';
 import { Filmstrip } from './Filmstrip';
 
@@ -50,10 +50,11 @@ export const VideoProgress = ({ videoId }: VideoProgressProps) => {
                 {error && <p className="alert" role="alert">{error}</p>}
 
                 <div className="progress__actions">
-                    {video.status === 'done' && <a className="button button--primary" href={videoUrl(video.id)} download={`${video.name.replace(/[^\w-]+/g, '-')}.mp4`}>Download MP4</a>}
+                    {video.status === 'done' && <a className="button button--primary" href={videoUrl(video.id)} download={downloadName(video.name)}>Download MP4</a>}
                     {stopped && <button type="button" className="button button--primary" disabled={retrying} onClick={retry}>{retrying ? 'Retrying…' : 'Retry'}</button>}
                     {selected !== null && video.status !== 'done' && <button type="button" className="button" onClick={() => setSelected(null)}>Follow latest frame</button>}
                     <Link className="button" to="/" state={{ fresh: true }}>New video</Link>
+                    <Link className="button" to="/videos">All videos</Link>
                 </div>
             </div>
 
