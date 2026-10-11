@@ -16,6 +16,10 @@ export function videoUrl(id: string) {
     return `/media/videos/${id}/output.mp4`;
 }
 
+export function downloadName(name: string) {
+    return `${name.replace(/[^\w-]+/g, '-')}.mp4`;
+}
+
 export async function fetchVideos() {
     const response = await fetch('/api/videos');
     if (!response.ok) throw await readError(response);
@@ -38,6 +42,11 @@ export async function retryVideo(id: string) {
     const response = await fetch(`/api/videos/${id}/retry`, { method: 'POST' });
     if (!response.ok) throw await readError(response);
     return await response.json() as Video;
+}
+
+export async function removeVideo(id: string) {
+    const response = await fetch(`/api/videos/${id}`, { method: 'DELETE' });
+    if (!response.ok) throw await readError(response);
 }
 
 export function watchVideo(id: string, onEvent: (event: VideoStreamEvent) => void, onClosed: () => void) {
